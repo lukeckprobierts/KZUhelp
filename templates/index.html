@@ -1,12 +1,47 @@
 <!DOCTYPE html>
 <html>
-  <head>
+  <head>  
     <meta charset="UTF-8">
     <title>Flask Boilerplate</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script>
+      async function startChat(event) {
+        event.preventDefault();
+        const inputText = document.getElementById('inputText').value;
+        const responseDiv = document.getElementById('response');
+        const submitButton = document.querySelector('button[type="submit"]'); // Define the submitButton variable
+        
+        responseDiv.innerHTML = ''; // Clear previous response
+        submitButton.disabled = true; // Disable the submit button
+
+        const response = await fetch('/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: 'inputText=' + encodeURIComponent(inputText),
+        });
+        document.getElementById('inputText').value = ''; // Clear the input field
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          responseDiv.innerHTML += decoder.decode(value, { stream: true });
+        }
+
+        submitButton.disabled = false; // Re-enable the submit button
+      }
+    </script>
   </head>
   <body>
     <h1>Hello from Flask!</h1>
-    <p>Welcome to your Flask boilerplate project.</p>
+    <form onsubmit="startChat(event);">
+      <label for="inputText">Enter some text:</label>
+      <input type="text" id="inputText" name="inputText" required>
+      <button type="submit">Submit</button>
+    </form>
+    <div id="response"></div>
   </body>
 </html>
