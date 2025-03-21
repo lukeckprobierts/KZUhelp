@@ -2,16 +2,22 @@
 <html>
   <head>  
     <meta charset="UTF-8">
-    <title>Flask Boilerplate</title>
+    <title>Gemma3 ChatBot</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
     <script>
       async function startChat(event) {
         event.preventDefault();
         const inputText = document.getElementById('inputText').value;
         const responseDiv = document.getElementById('response');
-        const submitButton = document.querySelector('button[type="submit"]'); // Define the submitButton variable
+        const submitButton = document.querySelector('button[type="submit"]');
         
-        responseDiv.innerHTML = ''; // Clear previous response
+        // Display the user's message
+        const userMessageDiv = document.createElement('div');
+        userMessageDiv.className = 'message user';
+        userMessageDiv.textContent = inputText;
+        responseDiv.appendChild(userMessageDiv);
+
         submitButton.disabled = true; // Disable the submit button
 
         const response = await fetch('/', {
@@ -21,14 +27,19 @@
           },
           body: 'inputText=' + encodeURIComponent(inputText),
         });
-        document.getElementById('inputText').value = ''; // Clear the input field
+
+        document.getElementById('inputText').value = ''; // Clear the input field after the fetch request is initiated
 
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
+        const tempDiv = document.createElement('div');
+        tempDiv.className = 'message assistant';
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
-          responseDiv.innerHTML += decoder.decode(value, { stream: true });
+          const chunk = decoder.decode(value, { stream: true });
+          tempDiv.innerHTML += chunk; // Append each chunk to the temporary container
+          responseDiv.appendChild(tempDiv); // Append the temporary container to the responseDiv
         }
 
         submitButton.disabled = false; // Re-enable the submit button
@@ -36,12 +47,13 @@
     </script>
   </head>
   <body>
-    <h1>Hello from Flask!</h1>
+    <h1>Gemma3 Chatbot</h1>
+    <div id="response" class="chat-container"></div>
     <form onsubmit="startChat(event);">
-      <label for="inputText">Enter some text:</label>
       <input type="text" id="inputText" name="inputText" required>
       <button type="submit">Submit</button>
     </form>
-    <div id="response"></div>
+    
   </body>
 </html>
+
