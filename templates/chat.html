@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row">
+    <!-- Sidebar for Chat Sessions -->
+    <div class="col-md-3">
+        <h4>Your Chats</h4>
+        <ul class="list-group mb-3">
+            {% for s in sessions %}
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                  <a href="#" class="session-link" data-session-id="{{ s.id }}">{{ s.name }}</a>
+                  <form action="{{ url_for('delete_session', session_id=s.id) }}" method="POST" class="d-inline">
+                      <button type="submit" class="btn btn-sm btn-danger">X</button>
+                  </form>
+              </li>
+            {% endfor %}
+        </ul>
+        <form action="{{ url_for('create_session') }}" method="POST">
+            <div class="input-group">
+                <input type="text" class="form-control" name="session_name" placeholder="New Chat Name">
+                <button class="btn btn-outline-secondary" type="submit">Create</button>
+            </div>
+        </form>
+    </div>
+    <!-- Chat Window -->
+    <div class="col-md-9">
+        <div id="chat-window" class="border p-3 mb-3" style="height: 400px; overflow-y: scroll;">
+            <!-- Chat messages will be appended here -->
+        </div>
+        <form id="chat-form">
+            <div class="input-group">
+                <input type="text" id="message-input" class="form-control" placeholder="Type your message here..." autocomplete="off" required>
+                <button id="submit-btn"class="btn btn-primary" type="submit">Send</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  let currentSessionId = {{ sessions[0].id if sessions|length > 0 else 0 }};
+</script>
+<script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+{% endblock %}
