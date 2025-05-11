@@ -1,10 +1,13 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, session, Response, jsonify, stream_with_context
 from config import Config
 from extensions import db  # Import db from the new file
-import requests
-import json
 from werkzeug.security import generate_password_hash, check_password_hash
 import ollama
+import chromadb
+from chromadb.utils import embedding_functions
+from rag_utils import init_chromadb, query_context
+
+
 app = Flask(__name__)
 app.config.from_object(Config)
 db.init_app(app)
@@ -135,18 +138,33 @@ OLLAMA_API_URL = "http://localhost:11434/api/generate"
 def stream_and_save_response(user_message, chat_session):
     complete_response = ""
     try:
-        # Call the Ollama chat function with the hardcoded model.
-        # have to replace this with a choose model function later.
-        # For now, we are using the gemma3:27b model, best thing that runs on my current nvidia p40 gpu.
-        # The stream=True parameter allows for streaming responses.
-        # The generator yields each chunk of the response as it's received., yield is used instead of return because we want to stream the response.
-        # The stream_with_context function keeps the request context active while streaming.
-        stream = ollama.chat('gemma3:27b', [{'role': 'user', 'content': user_message}], stream=True)
+        # Retrieve the conversation history, excluding the latest user message
+        messages = Message.query.filter_by(session_id=chat_session.id).order_by(Message.timestamp.asc()).all()
+        conversation_history = "\n".join(
+            [f"{'User' if msg.is_user else 'Bot'}: {msg.content}" for msg in messages[:-1]]  # Exclude the last message
+        )
+
+        # Retrieve context from ChromaDB with a stricter similarity threshold
+        context = query_context(user_message, n_results=5, similarity_threshold=1.5)
+
+        # Combine the context, conversation history, and user's message
+        if context:
+            prompt = f"language: whatever language user talks to you in, dont speak any other language or translate to english automatically, only when asked. Context from RAG:\n{context}\n\nConversation History:\n{conversation_history}\n\nUser: {user_message}"
+        else:
+            prompt = f"language: whatever language user talks to you in, dont speak any other language or translate to english automatically, only when asked. Conversation History:\n{conversation_history}\n\nUser: {user_message}"
+
+        # Call the Ollama chat function with the combined prompt
+        print(f"Prompt sent to model: {prompt}")  # Debug statement
+        stream = ollama.chat('gemma3:27b', [{'role': 'user', 'content': prompt}], stream=True)
         for chunk in stream:
+            print(f"Chunk received: {chunk}")  # Debug statement
             text_chunk = chunk['message']['content']
-            complete_response += text_chunk
+            complete_response += text_chunk  # Append the chunk to the complete response
             yield text_chunk  # Yield each chunk as it's received.
         yield "\n"  # Optionally yield a new line.
+
+        # Log the final complete response
+        print(f"Final Complete Response: {complete_response}")  # Debug statement
     except Exception as e:
         error_msg = f"Error: {e}"
         yield error_msg
@@ -163,7 +181,7 @@ def send_message():
     user_message = data.get("message")
     session_id = data.get("session_id")
 
-    # make sure the chat session exists.
+    # Make sure the chat session exists.
     chat_session = ChatSession.query.filter_by(id=session_id, user_id=session["user_id"]).first()
     if not chat_session:
         return jsonify({"error": "Chat session not found"}), 404
@@ -187,4 +205,5 @@ if __name__ == '__main__':
     # Create DB tables if they don't exist yet.
     with app.app_context():
         db.create_all()
+    init_chromadb("RAG_scannable_documents")  # Pass only the documents directory.
     app.run(debug=True)

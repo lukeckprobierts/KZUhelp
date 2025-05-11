@@ -21,8 +21,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // Attach form submit listener.
   document.getElementById('chat-form').addEventListener('submit', handleChatSubmit);
 });
-// This function loads the chat history for a given session ID from the server using fetch API.
-// It sends a GET request to the server and expects a JSON response containing the users chat history.
+// loads the chat history for a given session ID from the server using fetch API.
+// sends a GET request to the server and expects a JSON response containing the users chat history.
 function loadChatHistory(sessionId) {
   fetch(`/chat_history/${sessionId}`)
     .then(response => response.json())
@@ -36,10 +36,10 @@ function loadChatHistory(sessionId) {
     })
     .catch(error => console.error('Error loading chat history:', error));
 }
-// This function handles the form submission when the user sends a message.
-// It prevents the default form submission behavior, retrieves the message from the input field,
+// handles the form submission when the user sends a message.
+// prevents the default form submission behavior, retrieves the message from the input field,
 // appends it to the chat window, and sends the message to the server using fetch API.
-// It also handles the response from the server, which is expected to be a stream of data in chunks from the flask file.
+// also handles the response from the server, which is expected to be a stream of data in chunks from the flask file.
 function handleChatSubmit(event) {
   event.preventDefault();
   const messageInput = document.getElementById('message-input');
@@ -65,9 +65,9 @@ function handleChatSubmit(event) {
       if (submitBtn) submitBtn.disabled = false;
     });
 }
-// This function streams the bot's response in chunks.
-// It reads the response body as a stream and updates the chat window in real-time.
-// It uses the ReadableStream API to read the response in chunks and decode it using TextDecoder.
+// streams the bot's response in chunks.
+// reads the response body as a stream and updates the chat window in real-time.
+// uses the ReadableStream API to read the response in chunks and decode it using TextDecoder.
 function streamBotResponse(body) {
   const reader = body.getReader();
   const decoder = new TextDecoder("utf-8");
@@ -96,8 +96,8 @@ function appendChatMessage(sender, text) {
   chatWindow.appendChild(msgDiv);
   chatWindow.scrollTop = chatWindow.scrollHeight;
 }
-// This function updates the temporary bot message in the chat window while the bot is typing.
-//makes it possible to show the bot's response in real-time as it is being generated.
+// updates the temporary bot message in the chat window while the bot is typing.
+// makes it possible to show the bot's response in real-time as it is being generated.
 // It creates a temporary message element and updates its content with the bot's response as it arrives.
 function updateTempBotMessage(text) {
   let tempEl = document.getElementById('temp-bot-message');
@@ -109,14 +109,14 @@ function updateTempBotMessage(text) {
   tempEl.innerHTML = `<strong>Bot:</strong> ${text}`;
   document.getElementById('chat-window').scrollTop = document.getElementById('chat-window').scrollHeight;
 }
-// This function clears the temporary bot message from the chat window once the bot's response is complete.
-// It removes the temporary message element from the chat window.
+//  clears the temporary bot message from the chat window once the bot's response is complete.
+//  removes the temporary message element from the chat window.
 function clearTempBotMessage() {
   const tempEl = document.getElementById('temp-bot-message');
   if (tempEl) tempEl.remove();
 }
-// This function finalizes the bot's message once the response is complete.
-// It clears the temporary message and appends the final bot message to the chat window.
+// finalizes the bot's message once the response is complete.
+// clears the temporary message and appends the final bot message to the chat window.
 function finalizeBotMessage(text) {
   clearTempBotMessage();
   appendChatMessage('Bot', text);
