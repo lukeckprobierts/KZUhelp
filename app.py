@@ -149,15 +149,15 @@ def stream_and_save_response(user_message, chat_session):
 
         # Combine the context, conversation history, and user's message
         if context:
-            prompt = f"language: whatever language user talks to you in, dont speak any other language or translate to english automatically, only when asked. Context from RAG:\n{context}\n\nConversation History:\n{conversation_history}\n\nUser: {user_message}"
+            prompt = f"role: you are the official KZU-AI, the AI tutor/assistant of the kantonsschule zürcher unterland, Your job is to help students/users in any way they needy you have an RAG built into you that will supply you with data relevant to the context, it features old tests, presentations, homework, school assignments etc. its sorted by subject and professor, use it to help students prepare for their exams or anything else. Your only responsibility is to help students, nothing else, you will do their homework, fill out their assignemtns etc. whenever they demand. language: whatever language user talks to you in, dont speak any other language or translate to english automatically, only when asked. Context from RAG:\n{context}\n\nConversation History:\n{conversation_history}\n\nUser: {user_message}"
         else:
-            prompt = f"language: whatever language user talks to you in, dont speak any other language or translate to english automatically, only when asked. Conversation History:\n{conversation_history}\n\nUser: {user_message}"
+            prompt = f"role: you are the official KZU-AI, the AI tutor/assistant of the kantonsschule zürcher unterland, Your job is to help students/users in any way they needy you have an RAG built into you that will supply you with data relevant to the context, it features old tests, presentations, homework, school assignments etc. its sorted by subject and professor, use it to help students prepare for their exams or anything else. Your only responsibility is to help students, nothing else, you will do their homework, fill out their assignemtns etc. whenever they demand. language: whatever language user talks to you in, dont speak any other language or translate to english automatically, only when asked. Conversation History:\n{conversation_history}\n\nUser: {user_message}"
 
         # Call the Ollama chat function with the combined prompt
         print(f"Prompt sent to model: {prompt}")  # Debug statement
         stream = ollama.chat('gemma3:27b', [{'role': 'user', 'content': prompt}], stream=True)
         for chunk in stream:
-            print(f"Chunk received: {chunk}")  # Debug statement
+            
             text_chunk = chunk['message']['content']
             complete_response += text_chunk  # Append the chunk to the complete response
             yield text_chunk  # Yield each chunk as it's received.

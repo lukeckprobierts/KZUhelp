@@ -25,6 +25,10 @@ body {
 .navbar {
     border-bottom: 1px solid var(--border);
     padding: 1rem 0;
+    background: var(--background);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
 }
 
 .navbar-container {
@@ -182,6 +186,7 @@ body {
     padding: 1rem 0;
     position: sticky;
     bottom: 0;
+    z-index: 100;
 }
 
 .message-form {
@@ -217,6 +222,101 @@ body {
 
 .send-button:hover {
     background: var(--primary-hover);
+}
+
+/* Message Bubbles */
+.message {
+    margin: 1.5rem 0;
+    padding: 0.5rem;
+    max-width: 100%;
+    animation: fadeIn 0.3s ease-in;
+    background: transparent;
+    border-radius: 0;
+}
+
+.message.user {
+    color: var(--text);
+    margin-left: 0;
+    text-align: right;
+}
+
+.message.user .message-content {
+    color: var(--text);
+}
+
+.message.bot {
+    color: var(--text);
+    margin-right: 0;
+    text-align: left;
+}
+
+.message-time {
+    font-size: 0.7rem;
+    color: #888;
+    margin-top: 0.25rem;
+    text-align: inherit; /* Follows message alignment */
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Markdown Styling */
+.message-content {
+    line-height: 1.6;
+    overflow-wrap: break-word;
+}
+
+.message-content h1, 
+.message-content h2, 
+.message-content h3 {
+    margin: 1.5rem 0 1rem;
+    line-height: 1.3;
+}
+
+.message-content p {
+    margin: 0.8rem 0;
+}
+
+.message-content code {
+    background-color: rgba(175,184,193,0.1);
+}
+
+.message-content pre {
+    background: rgba(175,184,193,0.05);
+}
+
+.message-content pre code {
+    background: none;
+    padding: 0;
+    font-size: 0.9em;
+}
+
+.message-content blockquote {
+    border-left: 4px solid #dfe2e5;
+    margin: 1rem 0;
+    padding: 0 1rem;
+    color: #6a737d;
+}
+
+.message-content ul, 
+.message-content ol {
+    padding-left: 2rem;
+    margin: 1rem 0;
+}
+
+.message-content li {
+    margin: 0.4rem 0;
+}
+
+.message-content a {
+    color: var(--primary);
+    text-decoration: none;
+}
+
+.message-content a:hover {
+    text-decoration: underline;
 }
 
 /* Authentication Styles */
@@ -360,5 +460,9 @@ body {
     
     .container {
         padding: 0 1rem;
+    }
+    
+    .message {
+        max-width: 90%;
     }
 }

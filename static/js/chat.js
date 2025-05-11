@@ -1,8 +1,17 @@
 document.addEventListener('DOMContentLoaded', () => {
-  // Global current session ID (default to first session from template)
+  // Initialize markdown parser and highlighter
+  marked.setOptions({
+    breaks: true,
+    highlight: (code, language) => {
+      const validLang = hljs.getLanguage(language) ? language : 'plaintext';
+      return hljs.highlight(code, { language: validLang }).value;
+    }
+  });
+
+  // Global current session ID
   window.currentSessionId = document.querySelector('.session-link')?.getAttribute('data-session-id') || 0;
-  //setting up the fundamental elements of the chatbot
-  // Attach click listeners to session links to load history on selection.
+
+  // Session link handling
   const sessionLinks = document.querySelectorAll('.session-link');
   sessionLinks.forEach(link => {
     link.addEventListener('click', (event) => {
@@ -15,112 +24,139 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Load history for the initial session.
+  // Initial history load
   loadChatHistory(window.currentSessionId);
 
-  // Attach form submit listener.
+  // Form submission
   document.getElementById('chat-form').addEventListener('submit', handleChatSubmit);
 });
-// loads the chat history for a given session ID from the server using fetch API.
-// sends a GET request to the server and expects a JSON response containing the users chat history.
+// Function to load chat history
+// This function fetches the chat history from the server using Fetch API 
 function loadChatHistory(sessionId) {
   fetch(`/chat_history/${sessionId}`)
     .then(response => response.json())
     .then(history => {
       const chatWindow = document.getElementById('chat-window');
-      chatWindow.innerHTML = ""; // Clear existing messages.
+      chatWindow.innerHTML = "";
       history.forEach(msg => {
-        appendChatMessage(msg.is_user ? 'You' : 'Bot', msg.content);
+        appendMessage(msg.content, !msg.is_user);
       });
       chatWindow.scrollTop = chatWindow.scrollHeight;
     })
     .catch(error => console.error('Error loading chat history:', error));
 }
-// handles the form submission when the user sends a message.
-// prevents the default form submission behavior, retrieves the message from the input field,
-// appends it to the chat window, and sends the message to the server using fetch API.
-// also handles the response from the server, which is expected to be a stream of data in chunks from the flask file.
+// Function to handle chat form submission
+// This function prevents the default form submission, retrieves the message input, 
+// and sends the message to the server using Fetch API
+// It also handles the response by streaming it back to the chat window
 function handleChatSubmit(event) {
   event.preventDefault();
   const messageInput = document.getElementById('message-input');
-  const userMessage = messageInput.value;
+  const userMessage = messageInput.value.trim();
+  if (!userMessage) return;
+
   messageInput.value = "";
-  appendChatMessage('You', userMessage);
+  appendMessage(userMessage, false);
   clearTempBotMessage();
 
-  // Disable the submit button while waiting for the response.
   const submitBtn = document.getElementById('submit-btn');
   if (submitBtn) submitBtn.disabled = true;
-  // Send the message to the server.
-  // The server should handle the session ID and return the bot's response.
+
   fetch('/send_message', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message: userMessage, session_id: window.currentSessionId })
+    body: JSON.stringify({ 
+      message: userMessage, 
+      session_id: window.currentSessionId 
+    })
   })
     .then(response => streamBotResponse(response.body))
     .catch(error => {
-      console.error('Error sending message:', error);
-      // In case of error, re-enable the button.
+      console.error('Error:', error);
       if (submitBtn) submitBtn.disabled = false;
     });
 }
-// streams the bot's response in chunks.
-// reads the response body as a stream and updates the chat window in real-time.
-// uses the ReadableStream API to read the response in chunks and decode it using TextDecoder.
+//**
+// Function to handle streaming bot response
+// This function reads the response body in chunks and updates the message in real-time
+// It uses the Fetch API's ReadableStream to read the response body
 function streamBotResponse(body) {
   const reader = body.getReader();
-  const decoder = new TextDecoder("utf-8");
+  const decoder = new TextDecoder();
   let botMessage = "";
 
-  function readChunk() {
+  function read() {
     reader.read().then(({ done, value }) => {
       if (done) {
         finalizeBotMessage(botMessage);
         return;
       }
-      const chunk = decoder.decode(value);
-      botMessage += chunk;
+      
+      botMessage += decoder.decode(value, { stream: true });
       updateTempBotMessage(botMessage);
-      readChunk();
+      read();
     });
   }
-  readChunk();
+  read();
 }
-//simple function to append a chat message to the chat window.
-// It creates a new div element for the message, sets its inner HTML to include the sender and message text,
-function appendChatMessage(sender, text) {
+// Function to append a message to the chat window
+// This function creates a new message element and appends it to the chat window  
+function appendMessage(text, isBot) {
   const chatWindow = document.getElementById('chat-window');
-  const msgDiv = document.createElement('div');
-  msgDiv.innerHTML = `<strong>${sender}:</strong> ${text}`;
-  chatWindow.appendChild(msgDiv);
+  const messageDiv = document.createElement('div');
+  messageDiv.className = `message ${isBot ? 'bot' : 'user'}`;
+  
+  const content = isBot 
+    ? DOMPurify.sanitize(marked.parse(text))
+    : DOMPurify.sanitize(text);
+
+  messageDiv.innerHTML = `
+    <div class="message-content">${content}</div>
+    <div class="message-time">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+  `;
+
+  chatWindow.appendChild(messageDiv);
   chatWindow.scrollTop = chatWindow.scrollHeight;
+
+  if (isBot) {
+    messageDiv.querySelectorAll('pre code').forEach(block => {
+      hljs.highlightElement(block);
+    });
+  }
 }
-// updates the temporary bot message in the chat window while the bot is typing.
-// makes it possible to show the bot's response in real-time as it is being generated.
-// It creates a temporary message element and updates its content with the bot's response as it arrives.
+// Function to update the temporary bot message
+// This function creates or updates a temporary message element while the bot is typing
 function updateTempBotMessage(text) {
   let tempEl = document.getElementById('temp-bot-message');
   if (!tempEl) {
     tempEl = document.createElement('div');
     tempEl.id = 'temp-bot-message';
+    tempEl.className = 'message bot';
     document.getElementById('chat-window').appendChild(tempEl);
   }
-  tempEl.innerHTML = `<strong>Bot:</strong> ${text}`;
+
+  const parsedContent = DOMPurify.sanitize(marked.parse(text));
+  tempEl.innerHTML = `
+    <div class="message-content">${parsedContent}</div>
+    <div class="message-time">Typing...</div>
+  `;
+
+  tempEl.querySelectorAll('pre code').forEach(block => {
+    hljs.highlightElement(block);
+  });
+  
   document.getElementById('chat-window').scrollTop = document.getElementById('chat-window').scrollHeight;
 }
-//  clears the temporary bot message from the chat window once the bot's response is complete.
-//  removes the temporary message element from the chat window.
+// Function to clear the temporary bot message
+// This function removes the temporary message element from the chat window
 function clearTempBotMessage() {
   const tempEl = document.getElementById('temp-bot-message');
   if (tempEl) tempEl.remove();
 }
-// finalizes the bot's message once the response is complete.
-// clears the temporary message and appends the final bot message to the chat window.
+// Function to finalize the bot message
+// This function clears the temporary message and appends the final bot message
 function finalizeBotMessage(text) {
   clearTempBotMessage();
-  appendChatMessage('Bot', text);
-  // Re-enable the submit button once the response is complete.
-  const submitBtn = document.getElementById('submit-btn');
-  if (submitBtn) submitBtn.disabled = false;
+  appendMessage(text, true);
+  document.getElementById('submit-btn').disabled = false;
 }
