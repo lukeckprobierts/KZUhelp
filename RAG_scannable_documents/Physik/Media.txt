@@ -1,0 +1,53 @@
+ER
+
+i Si LHS/Kreispozess 95.2025
+
+Aufgabe: 1 2 3 4 5
+
+Punktzahl: 2 las las | 5 | 55
+
+1, Ein ideales Gas dehne sich adial
+die Arbeit W = -720)
+
+sch auf sein drelfaches Volumen aus, Bei dieser Expansion verrichtet das Gas
+
+a) Wieviel Wärme wird vom Gas aufgenommen
+b) Wie ändert sich die innere Energie des Gases?
+
+c) Steigt oder sinkt die Temperatur des Gases?
+
+2. Das Volumen eines eingeschlossenen Gases verkleinert sich bei konstanter Temperatur.
+
+@) Welche Zustands-Grösse, die Sie in der Wärmelehre in der Physik kennengelernt haben, bleibt dabei auch
+konstant?
+
+b) Nimmt das Gas dabei Wärmemenge auf oder gibt es Wärmemenge ab?
+
+c) Erklären Sie die Antwort von b) mit Hilfe einer Gleichung und geben Sie dabei die Vorzeichen der aufgeführ-
+ten Grössen an.
+
+3. Aus der Erfahrung weiss man, dass die verwendete Dampfmaschine (Wärmekraftmaschine) die Wasserdampf-
+menge m, = 5kg benötigt, um die nutzbare Energie W = 2.7 10°] abgeben zu können, und dass die Herstel-
+
+lung von ikg des hier verwendeten Wasserdampfes die Verbrennung von m, = 0.125kg Kohle mit der spezifi-
+schen Verbrennungswärme H,,,, =30:10° J/kgerfordert.
+
+Berechnen Sie den Wirkungsgrad der Dampfmaschine.
+
+4. Ein Wohnhaus am See soll mit Hilfe einer Wärmepumpe beheizt werden. Dazu wird dem See bei der Temperatur
+4°C eine Wärmemenge Qaurentzogen und den elise bei der ana 54°C eine Wärmemenge Qu ab-
+gegeben. Zur Erwärmung des tunde die Wärmemenge 3.5: 10° J andie
+Raumluft abgeben.
+
+a) Zeichnen Sie ein entspi
+b) Wie gross ist der ideal
+
+c) Wieso werden mit
+
+d) Tatsächlich wird nu tung muss für den Betrieb
+
+der Wärmepumpe
+
+Falls Sie b) nicht lö se n=6.
+
+\

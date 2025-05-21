@@ -5,7 +5,11 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import ollama
 import chromadb
 from chromadb.utils import embedding_functions
-from rag_utils import init_chromadb, query_context
+from rag_utils import init_chromadb, query_context, process_uploaded_file
+import os
+from werkzeug.utils import secure_filename
+import datetime
+
 
 
 app = Flask(__name__)
@@ -181,23 +185,98 @@ def send_message():
     user_message = data.get("message")
     session_id = data.get("session_id")
 
-    # Make sure the chat session exists.
+    # Make sure the chat session exists
     chat_session = ChatSession.query.filter_by(id=session_id, user_id=session["user_id"]).first()
     if not chat_session:
         return jsonify({"error": "Chat session not found"}), 404
 
-    # Save the user's message.
-    user_msg = Message(session_id=chat_session.id, is_user=True, content=user_message)
+    # Check for temporary uploaded content
+    uploaded_content = temp_uploads.pop(session_id, None)
+    if uploaded_content:
+        # Combine user message with uploaded content
+        full_message = f"{user_message}\n\n📄 Attached document: {uploaded_content['filename']}\n\nContent:\n{uploaded_content['extracted_text']}"
+    else:
+        full_message = user_message
+
+    # Save the user's message
+    user_msg = Message(session_id=chat_session.id, is_user=True, content=full_message)
     db.session.add(user_msg)
     db.session.commit()
 
-    # Wrap the generator with stream_with_context to keep the request context active.
+    # Stream the response
     return Response(
-        stream_with_context(stream_and_save_response(user_message, chat_session)),
+        stream_with_context(stream_and_save_response(full_message, chat_session)),
         mimetype='text/plain'
     )
 
 
+UPLOAD_FOLDER = 'uploads'
+ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg', 'tiff', 'bmp'}
+# Dictionary to store temporary upload content
+temp_uploads = {}
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+@app.route('/upload', methods=['POST'])
+@login_required
+def upload_file():
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file part'}), 400
+        
+    file = request.files['file']
+    session_id = request.form.get('session_id')
+    
+    if file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+        
+    if file and allowed_file(file.filename):
+        try:
+            # Create temporary upload directory if it doesn't exist
+            os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+            
+            # Save uploaded file temporarily
+            filename = secure_filename(file.filename)
+            temp_path = os.path.join(UPLOAD_FOLDER, filename)
+            file.save(temp_path)
+            
+            # Process the file and add to RAG system
+            extracted_text, final_path = process_uploaded_file(
+                temp_path, 
+                destination_dir="RAG_SCANNABLE_DOCUMENTS"
+            )
+            
+            # Store in temporary uploads
+            temp_uploads[session_id] = {
+                'filename': filename,
+                'extracted_text': extracted_text,
+                'timestamp': datetime.datetime.now()
+            }
+            
+            # Clean up temporary file
+            os.remove(temp_path)
+            
+            return jsonify({
+                'message': 'File processed successfully',
+                'extracted_text': extracted_text,
+                'stored_path': final_path,
+                'added_to_rag': True
+            })
+            
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+            
+    return jsonify({'error': 'Invalid file type'}), 400
+
+def cleanup_temp_uploads():
+    """Clean up temporary uploads older than 1 hour"""
+    current_time = datetime.datetime.now()
+    expired_sessions = [
+        session_id for session_id, data in temp_uploads.items()
+        if (current_time - data['timestamp']).total_seconds() > 3600
+    ]
+    for session_id in expired_sessions:
+        temp_uploads.pop(session_id, None)
 
 # Run the application
 

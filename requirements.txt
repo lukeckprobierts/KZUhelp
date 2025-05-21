@@ -6,3 +6,7 @@ chromadb
 python-dotenv
 ollama
 sentence-transformers
+pytesseract
+PyMuPDF
+Pillow
+datetime

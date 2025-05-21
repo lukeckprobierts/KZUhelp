@@ -31,6 +31,13 @@
         <form id="chat-form" class="message-form-wrapper">
             <div class="message-form">
                 <input type="text" id="message-input" placeholder="Message KZU-AI..." autocomplete="off">
+                <label for="file-upload" class="upload-button" title="Upload Document">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <path d="M12 4v12m0-12l-4 4m4-4l4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        <path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </label>
+                <input type="file" id="file-upload" accept=".pdf,.png,.jpg,.jpeg,.tiff,.bmp" hidden>
                 <button type="submit" class="send-button">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
                         <path d="M5 12L19 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -45,7 +52,7 @@
 
 {% block scripts %}
 <script>
-  let currentSessionId = {{ sessions[0].id if sessions|length > 0 else 0 }};
+    let currentSessionId = {{ sessions[0].id if sessions|length > 0 else 0 }};
 </script>
 <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
 {% endblock %}

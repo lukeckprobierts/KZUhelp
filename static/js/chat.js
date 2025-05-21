@@ -30,6 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Form submission
   document.getElementById('chat-form').addEventListener('submit', handleChatSubmit);
 });
+
 // Function to load chat history
 // This function fetches the chat history from the server using Fetch API 
 function loadChatHistory(sessionId) {
@@ -45,6 +46,7 @@ function loadChatHistory(sessionId) {
     })
     .catch(error => console.error('Error loading chat history:', error));
 }
+
 // Function to handle chat form submission
 // This function prevents the default form submission, retrieves the message input, 
 // and sends the message to the server using Fetch API
@@ -76,6 +78,7 @@ function handleChatSubmit(event) {
       if (submitBtn) submitBtn.disabled = false;
     });
 }
+
 //**
 // Function to handle streaming bot response
 // This function reads the response body in chunks and updates the message in real-time
@@ -99,6 +102,7 @@ function streamBotResponse(body) {
   }
   read();
 }
+
 // Function to append a message to the chat window
 // This function creates a new message element and appends it to the chat window  
 function appendMessage(text, isBot) {
@@ -124,6 +128,7 @@ function appendMessage(text, isBot) {
     });
   }
 }
+
 // Function to update the temporary bot message
 // This function creates or updates a temporary message element while the bot is typing
 function updateTempBotMessage(text) {
@@ -147,12 +152,14 @@ function updateTempBotMessage(text) {
   
   document.getElementById('chat-window').scrollTop = document.getElementById('chat-window').scrollHeight;
 }
+
 // Function to clear the temporary bot message
 // This function removes the temporary message element from the chat window
 function clearTempBotMessage() {
   const tempEl = document.getElementById('temp-bot-message');
   if (tempEl) tempEl.remove();
 }
+
 // Function to finalize the bot message
 // This function clears the temporary message and appends the final bot message
 function finalizeBotMessage(text) {
@@ -160,3 +167,55 @@ function finalizeBotMessage(text) {
   appendMessage(text, true);
   document.getElementById('submit-btn').disabled = false;
 }
+
+// File upload handling
+document.getElementById('file-upload').addEventListener('change', async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Create and show upload overlay
+    const overlay = document.createElement('div');
+    overlay.className = 'upload-overlay';
+    overlay.innerHTML = `
+        <div class="upload-progress">
+            <div>Uploading ${file.name}...</div>
+            <div class="progress-bar">
+                <div class="progress-bar-fill"></div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('session_id', window.currentSessionId);
+
+    try {
+        const response = await fetch('/upload', {
+            method: 'POST',
+            body: formData
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            // Show a small notification that file is ready to be sent
+            const notification = document.createElement('div');
+            notification.className = 'upload-notification';
+            notification.innerHTML = `📎 ${file.name} ready to send`;
+            document.querySelector('.message-form').appendChild(notification);
+
+            // Remove notification after 2 seconds
+            setTimeout(() => notification.remove(), 2000);
+        } else {
+            console.error('Upload failed:', result.error);
+        }
+    } catch (error) {
+        console.error('Upload error:', error);
+    } finally {
+        // Remove upload overlay
+        overlay.remove();
+        // Clear file input
+        event.target.value = '';
+    }
+});
